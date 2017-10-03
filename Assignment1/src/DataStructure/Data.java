@@ -14,27 +14,33 @@ import java.util.HashMap;
  */
 public class Data {
 
-    public URL currentURL;
-    public HashMap<String, String> response_header;
-    public ArrayList<String> response_data;
+    public URL m_current_URL;
+    public HashMap<String, String> m_response_header;
+    public ArrayList<byte[]> m_response_data;
+    
     public void newURL(String url_name){
-        currentURL = new URL(url_name);
+        m_current_URL = new URL(url_name);
     }
     
     public void setResponseHeader(HashMap rh){
-        response_header = rh;
+        m_response_header = rh;
     }
     
-    public void setData(ArrayList<String> data){
-        response_data = data;
+    public void setData(ArrayList<byte[]> data){
+        m_response_data = data;
     }
-
-//    public String getHost(){
-//        return currentURL.getHostName();
-//    }
-//    
-//    public String getQuery(){
-//        return currentURL.getQuery();
-//    }
+    
+    public int getContentLength(){
+        if (m_response_header == null) return -1;
+        return Integer.parseInt(m_response_header.get("Content-Length"));
+    }
+    
+    public String getHostName(){
+        return m_current_URL.getHostName();
+    }
+    
+    public String getQuery(){
+        return m_current_URL.getQuery();
+    }
 }
 
