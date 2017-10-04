@@ -42,5 +42,29 @@ public class Data {
     public String getQuery(){
         return m_current_URL.getQuery();
     }
+
+    
+    @Override
+    public String toString(){
+        boolean is_text  = false;
+        String out = "";
+        for (String key : m_response_header.keySet()){
+            out += key + ":" + m_response_header.get(key) + "\n";
+            if(key.equals("Content-Type")){
+                String[] content_type = m_response_header.get(key).split("[;]");
+                if(content_type[0].equals("text/html")){
+                    is_text = true;
+                }
+            }
+        }
+        out += "\n";
+        if(is_text){
+            for(byte[] data_line : m_response_data){
+                String line = new String(data_line, 0, data_line.length);
+                out += line + "\n";
+            }
+        }
+        return out;
+    }
 }
 
