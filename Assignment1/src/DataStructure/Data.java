@@ -60,12 +60,16 @@ public class Data {
             }
         }
         out += "\n";
-        if(is_text){
-            for(byte[] data_line : m_response_data){
+        int data_len = 0;
+        for(byte[] data_line : m_response_data){
+            if(is_text){
                 String line = new String(data_line, 0, data_line.length);
                 out += line + "\n";
             }
+            data_len += data_line.length;
         }
+        out += "\n";
+        out += "Data Read Length: " + data_len;
         return out;
     }
 }
