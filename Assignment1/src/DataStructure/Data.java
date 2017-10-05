@@ -32,7 +32,9 @@ public class Data {
     
     public int getContentLength(){
         if (m_response_header == null) return -1;
-        return Integer.parseInt(m_response_header.get("Content-Length"));
+        String content_length = m_response_header.get("Content-Length");
+        if (content_length == null) content_length = "0";
+        return Integer.parseInt(content_length);
     }
     
     public String getHostName(){
