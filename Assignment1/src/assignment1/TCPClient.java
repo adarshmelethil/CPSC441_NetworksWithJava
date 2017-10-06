@@ -57,9 +57,9 @@ public class TCPClient{
     private void sendMessage(String host_name, String query){
 //        System.out.println("SENDING MESSAGE:");
         String sent_message = 
-                "GET " + query + " HTTP/1.1\r\n"
-                + "Host: " + host_name + "\r\n"
-                + "\r\n";
+                    "GET " + query + " HTTP/1.1\r\n"
+                +   "Host: " + host_name + "\r\n"
+                +   "\r\n";
         m_output_stream.print(sent_message);
 //        System.out.print(sent_message);
         m_output_stream.flush();
