@@ -25,7 +25,11 @@ public class Data {
     public URL m_current_URL;
     public HashMap<String, String> m_response_header;
     public ArrayList<byte[]> m_response_data;
-    private static final SimpleDateFormat m_Date_Time_Formater = new SimpleDateFormat("EEE,ddMMMyyyy HH:mm:ss zzz");
+    private static final SimpleDateFormat m_Date_Time_Formater = new SimpleDateFormat("EEE,ddMMMyyyyHH");
+    
+    public Data(){
+        m_Date_Time_Formater.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
     
     public void newURL(String url_name){
         m_current_URL = new URL(url_name);
@@ -33,14 +37,6 @@ public class Data {
     
     public void setResponseHeader(HashMap<String, String> response_header){
         m_response_header = response_header;
-        String lm = response_header.get("Last-Modified");
-//        Date d = null;
-//        try {
-//            d = m_Date_Time_Formater.parse(lm);
-//        } catch (ParseException ex) {
-//            Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
-//        }
-//        System.out.println(d);
     }
     
     public void setData(ArrayList<byte[]> data){
@@ -58,10 +54,48 @@ public class Data {
         return m_current_URL.getHostName();
     }
     
+    public int getPortNum(){
+        return m_current_URL.getPortNum();
+    }
+    
     public String getQuery(){
         return m_current_URL.getQuery();
     }
 
+    public HashMap<String, String> getHeader(){
+        return m_response_header;
+    }
+    
+    public String getHeaderValue(String key){
+        switch(key){
+            case "Date":
+                {
+                    String last_modified;
+                    Date date = null;
+                    last_modified = m_response_header.get("Date");
+                    try {
+                        date = m_Date_Time_Formater.parse(last_modified);
+                    } catch (ParseException ex) {
+                        Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    return date.toGMTString();
+                }
+            case "Last-Modified":
+                {
+                    String last_modified;
+                    Date date = null;
+                    last_modified = m_response_header.get("Last-Modified");
+                    try {
+                        date = m_Date_Time_Formater.parse(last_modified);
+                    } catch (ParseException ex) {
+                        Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
+                    }
+                    return date.toGMTString();
+                }
+            default:
+                return m_response_header.get(key);
+        }
+    }
     
     @Override
     public String toString(){
@@ -91,18 +125,10 @@ public class Data {
         return out;
     }
     
-    public static String getServerTime() {
-        Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat dateFormat = new SimpleDateFormat(
-            "EEE, dd MMM yyyy HH:mm:ss z", Locale.US);
-        dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
-        return dateFormat.format(calendar.getTime());
-    }
-    
     public static void main(String[] args){
         
-        System.out.println(Data.getServerTime());
-        System.out.println(Calendar.getInstance().getTime());
+//        System.out.println(Data.getServerTime());
+//        System.out.println(Calendar.getInstance().getTime());
     }
 }
 

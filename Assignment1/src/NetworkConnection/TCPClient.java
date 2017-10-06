@@ -18,7 +18,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class TCPClient{
-    
     // Response FROM server
     PrintWriter m_output_stream;
     // Request stream TO server
@@ -29,7 +28,7 @@ public class TCPClient{
         data.newURL(url_name);
 //        System.out.println(data.currentURL);
         
-        openConnection(data.getHostName());
+        openConnection(data.getHostName(), data.getPortNum());
         sendMessage(data.getHostName(), data.getQuery());
         data.setResponseHeader(readResponseHeader());
         data.setData(readResponseData(data.getContentLength()));
@@ -38,11 +37,11 @@ public class TCPClient{
         return data;
     }
     
-    private void openConnection(String host_name){
+    private void openConnection(String host_name, int port_number){
 //        System.out.println("OPENING CONNECTION TO: " + host_name);
         try {
             Socket socket;
-            socket = new Socket(host_name, 80);
+            socket = new Socket(host_name, port_number);
         
             m_output_stream = new PrintWriter(new DataOutputStream(socket.getOutputStream()));
             m_response_stream = new BufferedInputStream((socket.getInputStream()));
@@ -154,10 +153,11 @@ public class TCPClient{
         
         for(String url: test_urls){
             data = tcpClient.makeRequest(url);
-            System.out.println(data);
+//            System.out.println(data);
+            System.out.print(data.getHeaderValue("Date"));
             System.out.println("---");
         }
 //        data = tcpClient.makeRequest("people.ucalgary.ca/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");
-//        System.out.print(data);
+//        System.out.print(data.getHeader("Date"));
     }
 }

@@ -14,9 +14,8 @@ import java.util.HashMap;
 public class URL{
     String m_host_name;
     String m_query;
-    
-    
-    
+    int m_port = 80;
+
     public URL(String url){
         parseURL(url);
     }
@@ -30,10 +29,19 @@ public class URL{
             m_host_name = url_name.substring(0,path_split_index);
             m_query = url_name.substring(path_split_index);
         }
+        if(m_host_name.indexOf(':') >= 0){
+            String[] host_port_split = m_host_name.split("[:]");
+            m_host_name = host_port_split[0];
+            m_port = Integer.parseInt(host_port_split[1]);
+        }
     }
 
     public String getHostName(){
         return m_host_name;
+    }
+    
+    public int getPortNum(){
+        return m_port;
     }
 
     public String getQuery(){
