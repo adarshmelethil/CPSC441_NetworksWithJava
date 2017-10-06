@@ -5,6 +5,7 @@ package assignment1;
  *
  */
 
+import NetworkConnection.TCPClient;
 import java.io.IOException;
 
 public class UrlCache {

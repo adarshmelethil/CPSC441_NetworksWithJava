@@ -1,4 +1,4 @@
-package assignment1;
+package NetworkConnection;
 
 import DataStructure.Data;
 import java.io.BufferedInputStream;
@@ -155,6 +155,9 @@ public class TCPClient{
         for(String url: test_urls){
             data = tcpClient.makeRequest(url);
             System.out.println(data);
+            System.out.println("---");
         }
+//        data = tcpClient.makeRequest("people.ucalgary.ca/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");
+//        System.out.print(data);
     }
 }

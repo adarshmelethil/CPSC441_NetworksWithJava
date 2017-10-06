@@ -3,8 +3,9 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package assignment1;
+package DataBasePackage;
 
+import NetworkConnection.TCPClient;
 import java.sql.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -14,7 +15,6 @@ import java.util.logging.Logger;
  */
 public class Database {
     Connection conn = null;
-    
     public static Connection ConnectDB(){
         try{
             Class.forName("org.sqlite.JDBC");
