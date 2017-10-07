@@ -7,6 +7,10 @@ package DataBasePackage;
 
 import DataStructure.Data;
 import NetworkConnection.TCPClient;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Set;
@@ -33,6 +37,7 @@ public class Database {
         "content_length",
         "content_type",
     };
+    private static final String M_DATA_FOLDER = "Data";
     private static Connection ConnectDB(){
         try{
             Class.forName("org.sqlite.JDBC");
@@ -52,22 +57,21 @@ public class Database {
     public Database(){
         m_db_connection = ConnectDB();
 //        CREATE TABLE Hosts(
-//        id INT PRIMARY KEY ON CONFLICT ABORT NOT NULL UNIQUE,
+//        id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
 //        host_name TEXT NOT NULL,
 //        port_num INT DEFAULT 80);
 
 //        CREATE TABLE Query(
-//        id INTEGER PRIMARY KEY AUTOINCREMENT,
+//        id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
 //        accept_ranges TEXT,
 //        server TEXT,
 //        etag TEXT,
-//        last_modified DATETIME NOT NULL,
-//        date DATETIME NOT NULL,
-//        content_length INT NOT NULL,
-//        content_type TEXT NOT NULL,
-//        host_id INT REFERENCES Hosts(id) ON DELETE CASCADE, 
-//        file_path TEXT NOT NULL DEFAULT '/',
-//        FOREIGN KEY(host_id)REFERENCES Hosts(id) ON DELETE CASCADE);
+//        last_modified DATETIME,
+//        date DATETIME,
+//        content_length INT,
+//        content_type TEXT,
+//        file_path TEXT NOT NULL,
+//        host_id INTEGER REFERENCES Hosts(id) ON DELETE CASCADE); 
 
     }
     
@@ -82,7 +86,6 @@ public class Database {
         ArrayList<String> keys_to_store = new ArrayList();
         List<String> stored_query_keys = Arrays.asList( M_QUERY_COLUMNS);
         for(String possible_key : header_keys){
-            
             if(stored_query_keys.contains(serverkeyToDBkey(possible_key))){
                 keys_to_store.add(possible_key);
             }
@@ -104,19 +107,106 @@ public class Database {
         return sql_statement_query;
     }
     
-    public int insertHost(String url, int host_hum){
+    public int getHostID(String url, int host_num){
+        String sql_statement_host = "SELECT id FROM Hosts WHERE host_name=? AND port_num=?";
+        
+        try{
+            PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
+            statement.setString(1, url);
+            statement.setInt(2, host_num);
+            ResultSet result = statement.executeQuery();
+            int id = -1;
+            while (result.next()){
+                if (id < 0){
+                id = result.getInt("id");
+                }else {
+                    System.out.println("Found more than one");
+                }
+            }
+            return id;
+        }catch(SQLException ex){
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
+        }
+    }
+    
+    public void insertHost(String url, int host_num){
         String sql_statement_host = "INSERT INTO Hosts(host_name, port_num) VALUES(?,?)";
         
-        return -1;
+        try {
+            PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
+            statement.setString(1, url);
+            statement.setInt(2, host_num);
+            statement.executeUpdate();
+        }catch(SQLException ex){
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+            
+        }
+    }
+    
+    public void createDirectories(String folder_name){
+        File theDir = new File(folder_name);
+//        System.out.println("checking directory");
+        // if the directory does not exist, create it
+        if (!theDir.exists()) {
+//            System.out.println("creating directory: " + theDir.getName());
+            boolean result = false;
+
+            try{
+                theDir.mkdirs();
+                result = true;
+            } 
+            catch(SecurityException se){
+                //handle it
+            }
+            if(result) {    
+//                System.out.println("DIR created");  
+            }
+        }
+    }
+    
+    public void saveDataToFile(ArrayList<byte[]> data, String file_path, Sting content_name){
+        FileOutputStream fos;
+        String data_path = file_path + "/" + content_name;
+        try {
+            fos = new FileOutputStream(data_path);
+            for(byte[] line_of_data : data){
+                fos.write(line_of_data);
+            }
+            fos.close();
+        } catch (FileNotFoundException ex) {
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public void insert(Data data){
-        insertHost(data.getHostName(), data.getPortNum());
+        int id = getHostID(data.getHostName(), data.getPortNum());
+        if(id < 0){
+            insertHost(data.getHostName(), data.getPortNum());
+            id = getHostID(data.getHostName(), data.getPortNum());
+        }
+        System.out.println(id);
         
-        ArrayList<String> available_keys;
-        available_keys = availableQueryKey(data.getHeader());
-        String sql_statement_query = createQueryStatement(available_keys);
+        String hostname_portnum = data.getHostName() + "_" + data.getPortNum();
+        String url_path = data.getQuery();
+        int file_content_split_index = url_path.lastIndexOf("/");
+        String folder_path = M_DATA_FOLDER +"/"+ hostname_portnum + url_path.substring(0, file_content_split_index);
+        String content = url_path.substring(file_content_split_index+1);
+        if(content.length() == 0) content = "LandingPage";
         
+        createDirectories(folder_path);
+        
+        saveDataToFile(data.getData(), folder_path, content);
+        
+        
+//        String[] folders = data.getQuery().split("/");
+//        System.out.println(folder_path);
+//        System.out.println("-" + content);
+//        ArrayList<String> available_keys = availableQueryKey(data.getHeader());
+//        String sql_statement_query = createQueryStatement(available_keys);
+         
     }
     
     public void closeConnection(){
@@ -134,6 +224,12 @@ public class Database {
         TCPClient client = new TCPClient();
         
         Data data = client.makeRequest("people.ucalgary.ca/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");
+//        Data data = client.makeRequest("people.ucalgary.ca");
+        System.out.println(data);
+        db.insert(data);
+//        System.out.println(db.getHostID(data.getHostName(), data.getPortNum()));
+//        System.out.println(db.getHostID(data.getHostName(), 81));
+        
     }
     
 }

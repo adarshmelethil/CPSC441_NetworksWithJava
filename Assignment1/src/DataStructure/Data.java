@@ -43,6 +43,10 @@ public class Data {
         m_response_data = data;
     }
     
+    public ArrayList<byte[]> getData(){
+        return m_response_data;
+    }
+    
     public int getContentLength(){
         if (m_response_header == null) return -1;
         String content_length = m_response_header.get("Content-Length");
@@ -101,6 +105,8 @@ public class Data {
     public String toString(){
         boolean is_text  = false;
         String out = "";
+        out += m_current_URL.m_host_name+":"+m_current_URL.getPortNum()+m_current_URL.m_query+"\n";
+        
         for (String key : m_response_header.keySet()){
             out += key + ":" + m_response_header.get(key) + "\n";
             if(key.equals("Content-Type")){
@@ -113,13 +119,15 @@ public class Data {
         }
         out += "\n";
         int data_len = 0;
-        for(byte[] data_line : m_response_data){
-//            if(is_text){
-//                String line = new String(data_line, 0, data_line.length);
-//                out += line + "\n";
-//            }
-            data_len += data_line.length;
-        }
+        data_len = m_response_data.stream().map((data_line) -> data_line.length).reduce(data_len, Integer::sum);//            if(is_text){
+
+//        for(byte[] data_line : m_response_data){
+////            if(is_text){
+////                String line = new String(data_line, 0, data_line.length);
+////                out += line + "\n";
+////            }
+//            data_len += data_line.length;
+//        }
 //        out += "\n";
         out += "Data Read Length: " + data_len;
         return out;
