@@ -70,30 +70,30 @@ public class Data {
         return m_response_header;
     }
     
+    public static Date stringToDate(String string_date){
+        String last_modified;
+        Date date = null;
+        last_modified = string_date;
+        try {
+            date = m_Date_Time_Formater.parse(last_modified);
+        } catch (ParseException ex) {
+            Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return date;
+    }
+    
     public String getHeaderValue(String key){
         switch(key){
             case "Date":
                 {
-                    String last_modified;
-                    Date date = null;
-                    last_modified = m_response_header.get("Date");
-                    try {
-                        date = m_Date_Time_Formater.parse(last_modified);
-                    } catch (ParseException ex) {
-                        Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                    Date date = stringToDate(m_response_header.get("Date"));
+                    
                     return date.toGMTString();
                 }
             case "Last-Modified":
                 {
-                    String last_modified;
-                    Date date = null;
-                    last_modified = m_response_header.get("Last-Modified");
-                    try {
-                        date = m_Date_Time_Formater.parse(last_modified);
-                    } catch (ParseException ex) {
-                        Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
-                    }
+                    Date date = stringToDate(m_response_header.get("Last-Modified"));
+                    
                     return date.toGMTString();
                 }
             default:

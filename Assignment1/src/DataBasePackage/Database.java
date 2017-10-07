@@ -108,6 +108,10 @@ public class Database {
             query_content.add(db_key);
             query_value_placeholder.add("?");
         }
+        query_content.add("file_path");
+        query_value_placeholder.add("?");
+        query_content.add("host_id");
+        query_value_placeholder.add("?");
         
         String sql_statement_query = "INSERT INTO Query("+query_content.toString()+") VALUES(" + query_value_placeholder.toString() + ")";
         return sql_statement_query;
@@ -135,28 +139,33 @@ public class Database {
             return -1;
         }
     }
-    
-    public boolean queryExists(int host_id, String data_path){
-        String sql_statement_host = "SELECT id FROM Hosts WHERE host_name=? AND port_num=?";
+
+    public void insertQuery(HashMap<String, String> header, String file_path, int host_id){
+        ArrayList<String> storing_keys = availableQueryKey(header);
+        String sql_statement_host = createQueryStatement(storing_keys);
         
-        try{
+        try {
             PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
-            statement.setString(1, url);
-            statement.setInt(2, host_num);
-            ResultSet result = statement.executeQuery();
-            int id = -1;
-            while (result.next()){
-                if (id < 0){
-                id = result.getInt("id");
-                }else {
-                    System.out.println("Found more than one");
-                }
-            }
-            return id;
+            
+            statement.setString(1, header.get("Accept-Ranges"));
+            statement.setString(2, header.get("Server"));
+            statement.setString(3, header.get("ETag"));
+            java.sql.Date sql_date = new java.sql.Date(Data.stringToDate(header.get("Last-Modified")).getTime());
+            statement.setDate(4, sql_date);
+            sql_date = new java.sql.Date(Data.stringToDate(header.get("Date")).getTime());
+            statement.setDate(5, sql_date);
+            statement.setInt(6, Integer.valueOf(header.get("Content-Length")));
+            statement.setString(7, header.get("Content-Type"));
+            statement.setString(8, file_path);
+            statement.setInt(9, host_id);
+
+            statement.executeUpdate();
         }catch(SQLException ex){
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
-            return -1;
+            
         }
+        
+        System.out.println((sql_statement_host));
     }
     
     public void insertHost(String url, int host_num){
@@ -169,8 +178,39 @@ public class Database {
             statement.executeUpdate();
         }catch(SQLException ex){
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
-            
         }
+    }
+    
+    public HashMap<String, String> getQuery(int host_id, String data_path){
+        String sql_statement_host = "SELECT * FROM Query WHERE host_id=? AND file_path=?";
+        HashMap<String, String> query = new HashMap();
+        try{
+            PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
+            statement.setInt(1, host_id);
+            statement.setString(2, data_path);
+            ResultSet result = statement.executeQuery();
+            int entry_count = 0;
+            while (result.next()){
+                if (entry_count <= 0){
+                    entry_count++;
+                    
+                    query.put("id", Integer.toString(result.getInt("id")));
+                    query.put("Accept-Ranges", result.getString("accept_ranges"));
+                    query.put("ETag", result.getString("etag"));
+                    query.put("Content-Length", Integer.toString(result.getInt("content_length")));
+                    query.put("Content-Type", result.getString("content_type"));
+                    query.put("Date", result.getString("date"));
+                    query.put("Last-Modified", result.getString("last_modified"));
+                    query.put("Data-Path", result.getString("file_path"));
+                    
+                }else {
+                    System.out.println("Found more than one path: " + entry_count++);
+                }
+            }
+        }catch(SQLException ex){
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        return query;
     }
     
     public void createDirectories(String folder_name){
@@ -268,12 +308,14 @@ public class Database {
     }
     
     public void insert(Data data){
-        int id = getHostID(data.getHostName(), data.getPortNum());
-        if(id < 0){
+        int host_id = getHostID(data.getHostName(), data.getPortNum());
+        boolean newHost = false;
+        if(host_id < 0){
+            newHost = true;
             insertHost(data.getHostName(), data.getPortNum());
-            id = getHostID(data.getHostName(), data.getPortNum());
+            host_id = getHostID(data.getHostName(), data.getPortNum());
         }
-        System.out.println(id);
+        System.out.println(host_id);
         
         String hostname_portnum = data.getHostName() + "_" + data.getPortNum();
         String url_path = data.getQuery();
@@ -282,10 +324,15 @@ public class Database {
         String content = url_path.substring(file_content_split_index+1);
         if(content.length() == 0) content = "LandingPage";
         
-        
-        createDirectories(folder_path);
-        saveDataToFile(data.getData(), folder_path, content);
-        
+        HashMap<String, String> header = getQuery(host_id, folder_path+"/"+content);
+        if(newHost || header.isEmpty()){
+            header = data.getHeader();
+            insertQuery(header, folder_path + "/" + content, host_id);
+            createDirectories(folder_path);
+            saveDataToFile(data.getData(), folder_path, content);
+        }else{
+            System.out.println("Already in database");
+        }
         
 //        String[] folders = data.getQuery().split("/");
 //        System.out.println(folder_path);
@@ -312,7 +359,7 @@ public class Database {
         Data data = client.makeRequest("people.ucalgary.ca/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");
 //        Data data = client.makeRequest("people.ucalgary.ca");
         System.out.println(data);
-//        db.insert(data);
+        db.insert(data);
         //        System.out.println(db.getHostID(data.getHostName(), data.getPortNum()));
 //        System.out.println(db.getHostID(data.getHostName(), 81));
         
