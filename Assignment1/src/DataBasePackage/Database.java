@@ -7,10 +7,16 @@ package DataBasePackage;
 
 import DataStructure.Data;
 import NetworkConnection.TCPClient;
+import java.io.BufferedInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Set;
@@ -130,6 +136,29 @@ public class Database {
         }
     }
     
+    public boolean queryExists(int host_id, String data_path){
+        String sql_statement_host = "SELECT id FROM Hosts WHERE host_name=? AND port_num=?";
+        
+        try{
+            PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
+            statement.setString(1, url);
+            statement.setInt(2, host_num);
+            ResultSet result = statement.executeQuery();
+            int id = -1;
+            while (result.next()){
+                if (id < 0){
+                id = result.getInt("id");
+                }else {
+                    System.out.println("Found more than one");
+                }
+            }
+            return id;
+        }catch(SQLException ex){
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+            return -1;
+        }
+    }
+    
     public void insertHost(String url, int host_num){
         String sql_statement_host = "INSERT INTO Hosts(host_name, port_num) VALUES(?,?)";
         
@@ -165,7 +194,7 @@ public class Database {
         }
     }
     
-    public void saveDataToFile(ArrayList<byte[]> data, String file_path, Sting content_name){
+    public void saveDataToFile(ArrayList<byte[]> data, String file_path, String content_name){
         FileOutputStream fos;
         String data_path = file_path + "/" + content_name;
         try {
@@ -179,6 +208,63 @@ public class Database {
         } catch (IOException ex) {
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    private int readLineFromInputStream(BufferedInputStream input_stream, byte[] response_buffer, int total_length){
+        int index = 0;
+        try{
+            index = 0;
+            while(true){
+                int read_byte = input_stream.read();
+                if(read_byte < 0){
+                    break;
+                }
+                response_buffer[index++] = (byte)read_byte;
+                if((char)read_byte == '\n'){
+                    break;
+                }
+                if(index >= total_length){
+                    System.out.println("Ran out of space");
+                    break;
+                }
+            }
+        }catch(IOException ex){
+            Logger.getLogger(TCPClient.class.getName()).log(Level.SEVERE, "Stream Closed", ex);
+            return -1;
+        }
+        return index;
+    }
+    
+    public ArrayList<byte[]> loadDataFromFile(String data_path){
+        ArrayList<byte[]> total_data = new ArrayList();
+        File file;
+        BufferedInputStream file_input_stream;
+        
+        try {
+            file = new File(data_path);
+            if (file.exists()){
+                System.out.println("File:");
+                System.out.println(file);
+                file_input_stream = new BufferedInputStream(new FileInputStream(file));
+
+                byte[] line_buffer = new byte[1000];
+                int bytes_read;
+
+                while(true){
+                    bytes_read = readLineFromInputStream(file_input_stream, line_buffer, 1000);
+                    if(bytes_read < 1) break;
+                    byte[] data_line = Arrays.copyOf(line_buffer, bytes_read);
+                    total_data.add(data_line);
+                }
+            }else{
+                System.out.println("File does not exist");
+            }
+
+        }catch (IOException ex) {
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        return total_data;
     }
     
     public void insert(Data data){
@@ -196,8 +282,8 @@ public class Database {
         String content = url_path.substring(file_content_split_index+1);
         if(content.length() == 0) content = "LandingPage";
         
-        createDirectories(folder_path);
         
+        createDirectories(folder_path);
         saveDataToFile(data.getData(), folder_path, content);
         
         
@@ -226,9 +312,23 @@ public class Database {
         Data data = client.makeRequest("people.ucalgary.ca/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");
 //        Data data = client.makeRequest("people.ucalgary.ca");
         System.out.println(data);
-        db.insert(data);
-//        System.out.println(db.getHostID(data.getHostName(), data.getPortNum()));
+//        db.insert(data);
+        //        System.out.println(db.getHostID(data.getHostName(), data.getPortNum()));
 //        System.out.println(db.getHostID(data.getHostName(), 81));
+        
+
+// LOADINg TEST
+//        System.out.println("loading");
+//        ArrayList<byte[]> loaded = db.loadDataFromFile("Data/people.ucalgary.ca_80/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");
+//        System.out.println("done loading");
+//        
+//        System.out.println(loaded.size());
+//        for(byte[] bb : loaded){
+//            for(byte b : bb){
+//                System.out.print((char)b);
+//            }
+//        }
+        
         
     }
     
