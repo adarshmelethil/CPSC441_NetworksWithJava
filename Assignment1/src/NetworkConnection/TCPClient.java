@@ -1,6 +1,7 @@
 package NetworkConnection;
 
 import DataStructure.Data;
+import DataStructure.URL;
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.DataInputStream;
@@ -37,6 +38,34 @@ public class TCPClient{
         return data;
     }
     
+    public Data makeRequest(URL url){
+        Data data = new Data();
+        data.setURL(url);
+//        System.out.println(data.currentURL);
+        
+        openConnection(data.getHostName(), data.getPortNum());
+        sendMessage(data.getHostName(), data.getQuery());
+        data.setResponseHeader(readResponseHeader());
+        data.setData(readResponseData(data.getContentLength()));
+        closeConnection();
+        
+        return data;
+    }
+    
+    public Data makeConditionalRequest(URL url, String date){
+        Data data = new Data();
+        data.setURL(url);
+//        System.out.println(data.currentURL);
+        
+        openConnection(data.getHostName(), data.getPortNum());
+        sendConditionalMessage(data.getHostName(), data.getQuery(), date);
+        data.setResponseHeader(readResponseHeader());
+        data.setData(readResponseData(data.getContentLength()));
+        closeConnection();
+        
+        return data;
+    }
+    
     private void openConnection(String host_name, int port_number){
 //        System.out.println("OPENING CONNECTION TO: " + host_name);
         try {
@@ -63,6 +92,18 @@ public class TCPClient{
 //        System.out.print(sent_message);
         m_output_stream.flush();
     }
+    
+    public void sendConditionalMessage(String host_name, String query, String date){
+        String sent_message = 
+                    "GET " + query + " HTTP/1.1\r\n"
+                +   "Host: " + host_name + "\r\n"
+                +   "Last-Modified: " + date + "\r\n"
+                +   "\r\n";
+        m_output_stream.print(sent_message);
+//        System.out.print(sent_message);
+        m_output_stream.flush();
+    }
+    
     // TA:minh.nguyen5@ucalgary.ca
     private int readLineFromInputStream(byte[] response_buffer, int total_length){        int index = 0;
         try{

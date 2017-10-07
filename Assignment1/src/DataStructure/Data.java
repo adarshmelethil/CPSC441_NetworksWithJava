@@ -35,6 +35,10 @@ public class Data {
         m_current_URL = new URL(url_name);
     }
     
+    public void setURL(URL url){
+        m_current_URL = url;
+    }
+    
     public void setResponseHeader(HashMap<String, String> response_header){
         m_response_header = response_header;
     }

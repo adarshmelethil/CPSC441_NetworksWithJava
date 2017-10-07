@@ -6,6 +6,7 @@
 package DataBasePackage;
 
 import DataStructure.Data;
+import DataStructure.URL;
 import NetworkConnection.TCPClient;
 import java.io.BufferedInputStream;
 import java.io.File;
@@ -49,7 +50,7 @@ public class Database {
             Class.forName("org.sqlite.JDBC");
             Connection conn = DriverManager.getConnection(Database.M_DATABASE_URL);
             
-            System.out.println("Connected to Database");
+//            System.out.println("Connected to Database");
             
             return conn;
         }catch(Exception ex){
@@ -199,8 +200,8 @@ public class Database {
                     query.put("ETag", result.getString("etag"));
                     query.put("Content-Length", Integer.toString(result.getInt("content_length")));
                     query.put("Content-Type", result.getString("content_type"));
-                    query.put("Date", result.getString("date"));
-                    query.put("Last-Modified", result.getString("last_modified"));
+                    query.put("Date", result.getDate("date").toGMTString());
+                    query.put("Last-Modified", result.getDate("last_modified").toGMTString());
                     query.put("Data-Path", result.getString("file_path"));
                     
                 }else {
@@ -283,8 +284,8 @@ public class Database {
         try {
             file = new File(data_path);
             if (file.exists()){
-                System.out.println("File:");
-                System.out.println(file);
+//                System.out.println("From File: ");
+//                System.out.println(file);
                 file_input_stream = new BufferedInputStream(new FileInputStream(file));
 
                 byte[] line_buffer = new byte[1000];
@@ -315,7 +316,7 @@ public class Database {
             insertHost(data.getHostName(), data.getPortNum());
             host_id = getHostID(data.getHostName(), data.getPortNum());
         }
-        System.out.println(host_id);
+//        System.out.println(host_id);
         
         String hostname_portnum = data.getHostName() + "_" + data.getPortNum();
         String url_path = data.getQuery();
@@ -323,7 +324,7 @@ public class Database {
         String folder_path = M_DATA_FOLDER +"/"+ hostname_portnum + url_path.substring(0, file_content_split_index);
         String content = url_path.substring(file_content_split_index+1);
         if(content.length() == 0) content = "LandingPage";
-        
+                
         HashMap<String, String> header = getQuery(host_id, folder_path+"/"+content);
         if(newHost || header.isEmpty()){
             header = data.getHeader();
@@ -331,7 +332,7 @@ public class Database {
             createDirectories(folder_path);
             saveDataToFile(data.getData(), folder_path, content);
         }else{
-            System.out.println("Already in database");
+//            System.out.println("Already in database");
         }
         
 //        String[] folders = data.getQuery().split("/");
@@ -350,6 +351,31 @@ public class Database {
         } catch (Exception ex) {
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
         }
+    }
+    
+    public HashMap<String, String> checkDatabase(URL url){
+        int host_id = getHostID(url.getHostName(), url.getPortNum());
+        if (host_id < 0) {
+            System.out.println("new host");
+            return null;
+        }
+        
+        String hostname_portnum = url.getHostName() + "_" + url.getPortNum();
+        String url_path = url.getQuery();
+        int file_content_split_index = url_path.lastIndexOf("/");
+        String folder_path = M_DATA_FOLDER +"/"+ hostname_portnum + url_path.substring(0, file_content_split_index);
+        String content = url_path.substring(file_content_split_index+1);
+        if(content.length() == 0) content = "LandingPage";
+        
+    
+        HashMap<String, String> header = getQuery(host_id, folder_path+"/"+content);
+//        System.out.println(url.getQuery());
+        if (header.isEmpty()) {
+            System.out.println("new query");
+            return null;
+        }
+        
+        return header;
     }
     
     public static void main(String args[]){
