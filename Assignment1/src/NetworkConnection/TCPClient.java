@@ -3,13 +3,9 @@ package NetworkConnection;
 import DataStructure.Data;
 import DataStructure.URL;
 import java.io.BufferedInputStream;
-import java.io.BufferedReader;
-import java.io.DataInputStream;
 import java.io.PrintWriter;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
@@ -70,7 +66,7 @@ public class TCPClient{
         openConnection(data.getHostName(), data.getPortNum());
         sendMessage(data.getHostName(), data.getQuery());
         data.setResponseHeader(readResponseHeader());
-        System.out.println("***" + data.getHeader().get("Last-Modified"));
+//        System.out.println("***" + data.getHeader().get("Last-Modified"));
         data.setData(readResponseData(data.getContentLength()));
         closeConnection();
         
@@ -189,8 +185,17 @@ public class TCPClient{
             message = new String(response_buffer, 0, bytes_read);
             
             if(message.length()-2 == 0) break;
-            String[] key_value_pair = message.split("[:]");
-            response_header.put(key_value_pair[0].replaceAll("\\s+",""), key_value_pair[1].replaceAll("\\s+",""));
+            int index_of_colon = message.indexOf(":");
+//            String[] key_value_pair = message.split("[:]");
+//            String key = key_value_pair[0].replaceAll("\\s+","");
+//            String value = key_value_pair[1].replaceAll("\\s+","");
+            String key = message.substring(0,index_of_colon);
+            String value = message.substring(index_of_colon+2);
+            int ending = value.indexOf("\r\n");
+            if(ending > 0){
+                value = value.substring(0, ending);
+            }
+            response_header.put(key, value);
             
             if (m_verbose){
                 System.out.print(message);
@@ -254,7 +259,7 @@ public class TCPClient{
         for(String url: test_urls){
             data = tcpClient.makeRequest(url);
 //            System.out.println(data);
-            System.out.print(data.getHeaderValue("Date"));
+            System.out.print(data.getHeader().get("Date"));
             System.out.println("---");
         }
 //        data = tcpClient.makeRequest("people.ucalgary.ca/~smithmr/2017webs/encm511_17/17_Labs/17_Familiarization_Lab/MockLEDInterface.cpp");

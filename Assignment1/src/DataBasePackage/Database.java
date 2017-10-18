@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.*;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.logging.Level;
@@ -184,10 +185,18 @@ public class Database {
             statement.setString(1, header.get("Accept-Ranges"));
             statement.setString(2, header.get("Server"));
             statement.setString(3, header.get("ETag"));
-            java.sql.Date sql_date = new java.sql.Date(Data.stringToDate(header.get("Last-Modified")).getTime());
+            
+            String date_string = header.get("Last-Modified");
+//            System.out.println("*" + date_string);
+            Date date = new Date(date_string);
+            java.sql.Date sql_date = new java.sql.Date(date.getTime());
             statement.setDate(4, sql_date);
-            sql_date = new java.sql.Date(Data.stringToDate(header.get("Date")).getTime());
+            
+            date_string = header.get("Date");
+            date = new Date(date_string);
+            sql_date = new java.sql.Date(date.getTime());
             statement.setDate(5, sql_date);
+            
             statement.setInt(6, Integer.valueOf(header.get("Content-Length")));
             statement.setString(7, header.get("Content-Type"));
             statement.setString(8, file_path);

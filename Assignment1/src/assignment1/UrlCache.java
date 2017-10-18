@@ -57,7 +57,12 @@ public class UrlCache {
             getCurrentDataFromDB(url_obj, header);
             String date = m_current_data.getHeader().get("Last-Modified");
             Data data = m_tcp.makeConditionalRequest(url_obj, date);
-            System.out.println("Retrieving from local file");
+            if(data.getHeader().get("Status").contains("OK")){
+                m_db.insert(data);
+                header = m_db.checkDatabase(url_obj);
+            }else{
+                System.out.println("Retrieving from local file");
+            }
             getCurrentDataFromDB(url_obj, header);
             
             
