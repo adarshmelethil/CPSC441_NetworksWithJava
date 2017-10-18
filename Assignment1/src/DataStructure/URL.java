@@ -50,9 +50,9 @@ public class URL{
 
     @Override
     public String toString(){
-        String url_string = "Host: '" + m_host_name + "'\n";
-        url_string += "Query: '" + m_query +"'\n";
-
+//        String url_string = "Host: '" + m_host_name + "'\n";
+//        url_string += "Query: '" + m_query +"'\n";
+        String url_string = m_host_name + ":" + m_port + m_query;
         return url_string;
     }
 }

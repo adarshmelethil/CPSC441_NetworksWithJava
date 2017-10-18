@@ -24,7 +24,28 @@ public class TCPClient{
     // Request stream TO server
     BufferedInputStream m_response_stream;
     
+    boolean m_verbose = false;
+    boolean m_verbose_data = false;
+    
+    public TCPClient(boolean verbose_info, boolean verbose_data){
+        m_verbose = verbose_info;
+        m_verbose_data = verbose_data;
+    }
+    
+    public TCPClient(boolean verbose){
+        m_verbose = verbose;
+        m_verbose_data = verbose;
+    }
+    
+    public TCPClient(){
+        m_verbose = true;
+        m_verbose_data = true;
+    }
+    
     public Data makeRequest(String url_name){
+        if(m_verbose){
+            System.out.println("MAKING REQUEST TO: " + url_name);
+        }
         Data data = new Data();
         data.newURL(url_name);
 //        System.out.println(data.currentURL);
@@ -39,6 +60,9 @@ public class TCPClient{
     }
     
     public Data makeRequest(URL url){
+        if(m_verbose){
+            System.out.println("MAKING REQUEST TO: " + url);
+        }
         Data data = new Data();
         data.setURL(url);
 //        System.out.println(data.currentURL);
@@ -46,6 +70,7 @@ public class TCPClient{
         openConnection(data.getHostName(), data.getPortNum());
         sendMessage(data.getHostName(), data.getQuery());
         data.setResponseHeader(readResponseHeader());
+        System.out.println("***" + data.getHeader().get("Last-Modified"));
         data.setData(readResponseData(data.getContentLength()));
         closeConnection();
         
@@ -53,6 +78,10 @@ public class TCPClient{
     }
     
     public Data makeConditionalRequest(URL url, String date){
+        if(m_verbose){
+            System.out.println("MAKING CONDITIONAL REQUEST TO: " + url);
+            System.out.println("DATE: " + date);
+        }
         Data data = new Data();
         data.setURL(url);
 //        System.out.println(data.currentURL);
@@ -67,7 +96,9 @@ public class TCPClient{
     }
     
     private void openConnection(String host_name, int port_number){
-//        System.out.println("OPENING CONNECTION TO: " + host_name);
+        if(m_verbose){
+            System.out.println("OPENING CONNECTION TO: " + host_name);
+        }
         try {
             Socket socket;
             socket = new Socket(host_name, port_number);
@@ -83,13 +114,17 @@ public class TCPClient{
     }
 
     private void sendMessage(String host_name, String query){
-//        System.out.println("SENDING MESSAGE:");
+        
+        
         String sent_message = 
                     "GET " + query + " HTTP/1.1\r\n"
                 +   "Host: " + host_name + "\r\n"
                 +   "\r\n";
+        if(m_verbose){
+            System.out.println("SENDING GET REQUEST: ");
+            System.out.print(sent_message);
+        }
         m_output_stream.print(sent_message);
-//        System.out.print(sent_message);
         m_output_stream.flush();
     }
     
@@ -97,19 +132,23 @@ public class TCPClient{
         String sent_message = 
                     "GET " + query + " HTTP/1.1\r\n"
                 +   "Host: " + host_name + "\r\n"
-                +   "Last-Modified: " + date + "\r\n"
+                +   "If-Modified-Since: " + date + "\r\n"
                 +   "\r\n";
+        
+        if(m_verbose){
+            System.out.println("SENDING CONDITIONAL GET REQUEST: ");
+            System.out.print(sent_message);
+        }
         m_output_stream.print(sent_message);
-//        System.out.print(sent_message);
         m_output_stream.flush();
     }
     
-    // TA:minh.nguyen5@ucalgary.ca
     private int readLineFromInputStream(byte[] response_buffer, int total_length){        int index = 0;
         try{
             index = 0;
             while(true){
                 int read_byte = m_response_stream.read();
+//                System.out.println((char)read_byte);
                 if(read_byte < 0){
                     break;
                 }
@@ -118,7 +157,9 @@ public class TCPClient{
                     break;
                 }
                 if(index >= total_length){
-                    System.out.println("Ran out of space");
+//                    System.out.println("Ran out of space: " + index + "/" + total_length);
+//                    String message = new String(response_buffer, 0, index);
+//                    System.out.print(index + "-'" + message + "'");
                     break;
                 }
             }
@@ -130,29 +171,39 @@ public class TCPClient{
     }
     
     private HashMap<String, String> readResponseHeader(){
-//        System.out.println("READING RESPONSE HEADER:");
+        if(m_verbose){
+            System.out.println("READING RESPONSE HEADER:");
+        }
         HashMap<String, String> response_header = new HashMap(); 
         
         byte[] response_buffer = new byte[1000];
         int bytes_read = readLineFromInputStream(response_buffer, 1000);
         String message = new String(response_buffer, 0, bytes_read);
         response_header.put("Status", message);
-//        System.out.println(message);
+        if(m_verbose){
+            System.out.println(message);
+        }
         
         while(true){
             bytes_read = readLineFromInputStream(response_buffer, 1000);
             message = new String(response_buffer, 0, bytes_read);
-//            System.out.println(message.length() + "-'" + message +"'");
+            
             if(message.length()-2 == 0) break;
             String[] key_value_pair = message.split("[:]");
             response_header.put(key_value_pair[0].replaceAll("\\s+",""), key_value_pair[1].replaceAll("\\s+",""));
+            
+            if (m_verbose){
+                System.out.print(message);
+            }
         }
   
         return response_header;
     }
     
     private ArrayList<byte[]> readResponseData(int content_length){
-//        System.out.println("READING RESPONSE DATA:");
+        if(m_verbose){
+            System.out.println("READING RESPONSE DATA: <#bytes>-'<string>'");
+        }
         ArrayList<byte[]> total_data = new ArrayList();
         int total_bytes_read = 0;
         
@@ -161,19 +212,27 @@ public class TCPClient{
         while(true){
             bytes_read = readLineFromInputStream(response_buffer, 1000);
             total_bytes_read += bytes_read;
-//            String message = new String(response_buffer, 0, bytes_read);
-//            System.out.print(total_bytes_read + "-'" + message + "'");
+            if(m_verbose_data){
+                String message = new String(response_buffer, 0, bytes_read);
+                System.out.print(bytes_read + "-'" + message + "'");
+            }
+            
                 
             byte[] data = Arrays.copyOf(response_buffer, bytes_read);
             total_data.add(data);
             
             if(total_bytes_read >= content_length) break;
         }
+        if(m_verbose){
+            System.out.println("TOTAL BYTES READ: " + total_bytes_read);
+        }
         return total_data;
     }
     
     private void closeConnection(){
-//        System.out.println("CLOSING CONNECTION");
+        if(m_verbose){
+            System.out.println("CLOSING CONNECTION");
+        }
         try{
             m_response_stream.close();
         }catch(IOException ex){

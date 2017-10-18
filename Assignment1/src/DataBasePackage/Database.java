@@ -13,11 +13,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.*;
 import java.util.HashMap;
 import java.util.Set;
@@ -33,7 +29,6 @@ import java.util.StringJoiner;
  * @author cow
  */
 public class Database {
-    Connection m_db_connection = null;
     public static final String M_DATABASE_URL = "jdbc:sqlite:cpsc_a1.db";
     private static final String[] M_QUERY_COLUMNS = {
         "accept_ranges",
@@ -59,27 +54,56 @@ public class Database {
         return null;
     }
     
-    
+    Connection m_db_connection = null;
+    boolean m_verbose;
+    boolean m_verbose_data;
     
     public Database(){
         m_db_connection = ConnectDB();
-//        CREATE TABLE Hosts(
-//        id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-//        host_name TEXT NOT NULL,
-//        port_num INT DEFAULT 80);
+        createTables();
+        m_verbose = true;
+        m_verbose_data = true;
+    }
+    
+    public Database(boolean verbose){
+        m_db_connection = ConnectDB();
+        createTables();
+        m_verbose = verbose;
+        m_verbose_data = verbose;
+    }
+    
+    public Database(boolean verbose_info, boolean verbose_data){
+        m_db_connection = ConnectDB();
+        createTables();
+        m_verbose = verbose_info;
+        m_verbose_data = verbose_data;
+    }
+    
+    public void createTables(){
+        String schema_hosts =  "CREATE TABLE IF NOT EXISTS Hosts("
+                             + "id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,"
+                             + "host_name TEXT NOT NULL,"
+                             + "port_num INT DEFAULT 80);";
+        String schema_query = "CREATE TABLE IF NOT EXISTS Query("
+                            + "id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,"
+                            + "accept_ranges TEXT,"
+                            + "server TEXT,"
+                            + "etag TEXT,"
+                            + "last_modified DATETIME,"
+                            + "date DATETIME,"
+                            + "content_length INT,"
+                            + "content_type TEXT,"
+                            + "file_path TEXT NOT NULL,"
+                            + "host_id INTEGER REFERENCES Hosts(id) ON DELETE CASCADE);";
+    
+        try {
+            Statement statement = m_db_connection.createStatement();
 
-//        CREATE TABLE Query(
-//        id INTEGER PRIMARY KEY AUTOINCREMENT UNIQUE,
-//        accept_ranges TEXT,
-//        server TEXT,
-//        etag TEXT,
-//        last_modified DATETIME,
-//        date DATETIME,
-//        content_length INT,
-//        content_type TEXT,
-//        file_path TEXT NOT NULL,
-//        host_id INTEGER REFERENCES Hosts(id) ON DELETE CASCADE); 
-
+            statement.execute(schema_hosts);
+            statement.execute(schema_query);
+        } catch (SQLException ex) {
+            Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
     public String serverkeyToDBkey(String key){
@@ -106,8 +130,10 @@ public class Database {
 
         for(String key: storing_keys){
             String db_key = serverkeyToDBkey(key);
-            query_content.add(db_key);
-            query_value_placeholder.add("?");
+            if(Arrays.asList(M_QUERY_COLUMNS).contains(db_key)){
+                query_content.add(db_key);
+                query_value_placeholder.add("?");
+            }
         }
         query_content.add("file_path");
         query_value_placeholder.add("?");
@@ -119,18 +145,22 @@ public class Database {
     }
     
     public int getHostID(String url, int host_num){
+        if(m_verbose){
+            System.out.println("GETTING HOSTID FROM DATABASE: " + url + ":" + host_num);
+        }
         String sql_statement_host = "SELECT id FROM Hosts WHERE host_name=? AND port_num=?";
         
         try{
             PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
             statement.setString(1, url);
             statement.setInt(2, host_num);
+
             ResultSet result = statement.executeQuery();
             int id = -1;
             while (result.next()){
                 if (id < 0){
                 id = result.getInt("id");
-                }else {
+                } else {
                     System.out.println("Found more than one");
                 }
             }
@@ -142,6 +172,9 @@ public class Database {
     }
 
     public void insertQuery(HashMap<String, String> header, String file_path, int host_id){
+        if(m_verbose){
+            System.out.println("INSERTING QUERY INTO DATABASE: " + host_id + ":" + file_path);
+        }
         ArrayList<String> storing_keys = availableQueryKey(header);
         String sql_statement_host = createQueryStatement(storing_keys);
         
@@ -163,19 +196,22 @@ public class Database {
             statement.executeUpdate();
         }catch(SQLException ex){
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
-            
         }
         
         System.out.println((sql_statement_host));
     }
     
     public void insertHost(String url, int host_num){
+        if(m_verbose){
+            System.out.println("INSERTING HOST INTO DATABASE: " + url + ", " + host_num);
+        }
         String sql_statement_host = "INSERT INTO Hosts(host_name, port_num) VALUES(?,?)";
         
         try {
             PreparedStatement statement = m_db_connection.prepareStatement(sql_statement_host);
             statement.setString(1, url);
             statement.setInt(2, host_num);
+
             statement.executeUpdate();
         }catch(SQLException ex){
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
@@ -215,6 +251,9 @@ public class Database {
     }
     
     public void createDirectories(String folder_name){
+        if(m_verbose){
+            System.out.println("CREATING FOLDER: " + folder_name);
+        }
         File theDir = new File(folder_name);
 //        System.out.println("checking directory");
         // if the directory does not exist, create it
@@ -236,6 +275,9 @@ public class Database {
     }
     
     public void saveDataToFile(ArrayList<byte[]> data, String file_path, String content_name){
+        if(m_verbose){
+            System.out.println("SAVING TO FILE: " + file_path + "/" + content_name);
+        }
         FileOutputStream fos;
         String data_path = file_path + "/" + content_name;
         try {
@@ -265,7 +307,9 @@ public class Database {
                     break;
                 }
                 if(index >= total_length){
-                    System.out.println("Ran out of space");
+//                    System.out.println("Ran out of space: " + index + "/" + total_length);
+//                    String message = new String(response_buffer, 0, index);
+//                    System.out.print(index + "-'" + message + "'");
                     break;
                 }
             }
@@ -277,10 +321,13 @@ public class Database {
     }
     
     public ArrayList<byte[]> loadDataFromFile(String data_path){
+        if(m_verbose){
+            System.out.println("LOADING FILE: " + data_path);
+        }
         ArrayList<byte[]> total_data = new ArrayList();
         File file;
         BufferedInputStream file_input_stream;
-        
+        int total_bytes = 0;
         try {
             file = new File(data_path);
             if (file.exists()){
@@ -290,12 +337,17 @@ public class Database {
 
                 byte[] line_buffer = new byte[1000];
                 int bytes_read;
-
+                
                 while(true){
                     bytes_read = readLineFromInputStream(file_input_stream, line_buffer, 1000);
+                    total_bytes += bytes_read;
                     if(bytes_read < 1) break;
                     byte[] data_line = Arrays.copyOf(line_buffer, bytes_read);
                     total_data.add(data_line);
+                    if(m_verbose_data){
+                        String message = new String(line_buffer, 0, bytes_read);
+                        System.out.print(bytes_read + "-'" + message + "'");
+                    }
                 }
             }else{
                 System.out.println("File does not exist");
@@ -304,11 +356,16 @@ public class Database {
         }catch (IOException ex) {
             Logger.getLogger(Database.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+        if(m_verbose){
+            System.out.println("TOTAL BYTES READ: " + total_bytes);
+        }
         return total_data;
     }
     
     public void insert(Data data){
+        if(m_verbose){
+            System.out.println("INSERTING DATA: ");
+        }
         int host_id = getHostID(data.getHostName(), data.getPortNum());
         boolean newHost = false;
         if(host_id < 0){
@@ -332,7 +389,7 @@ public class Database {
             createDirectories(folder_path);
             saveDataToFile(data.getData(), folder_path, content);
         }else{
-//            System.out.println("Already in database");
+            System.out.println("Already in database");
         }
         
 //        String[] folders = data.getQuery().split("/");
@@ -354,6 +411,9 @@ public class Database {
     }
     
     public HashMap<String, String> checkDatabase(URL url){
+        if(m_verbose){
+            System.out.println("CHECKING DATABASE FOR: " + url);
+        }
         int host_id = getHostID(url.getHostName(), url.getPortNum());
         if (host_id < 0) {
             System.out.println("new host");
@@ -367,11 +427,11 @@ public class Database {
         String content = url_path.substring(file_content_split_index+1);
         if(content.length() == 0) content = "LandingPage";
         
-    
+        
         HashMap<String, String> header = getQuery(host_id, folder_path+"/"+content);
 //        System.out.println(url.getQuery());
         if (header.isEmpty()) {
-            System.out.println("new query");
+            System.out.println("Not in Database!");
             return null;
         }
         

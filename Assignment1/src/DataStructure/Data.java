@@ -5,16 +5,11 @@
  */
 package DataStructure;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
+
 import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
+
 import java.util.HashMap;
-import java.util.Locale;
-import java.util.TimeZone;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 /**
  *
@@ -25,10 +20,10 @@ public class Data {
     public URL m_current_URL;
     public HashMap<String, String> m_response_header;
     public ArrayList<byte[]> m_response_data;
-    private static final SimpleDateFormat m_Date_Time_Formater = new SimpleDateFormat("EEE,ddMMMyyyyHH");
+//    public static final SimpleDateFormat M_Date_Time_Formater = new SimpleDateFormat("EEE, dd MMM yyyy HH:MM:SS");
     
     public Data(){
-        m_Date_Time_Formater.setTimeZone(TimeZone.getTimeZone("GMT"));
+//        M_Date_Time_Formater.setTimeZone(TimeZone.getTimeZone("GMT"));
     }
     
     public void newURL(String url_name){
@@ -72,37 +67,6 @@ public class Data {
 
     public HashMap<String, String> getHeader(){
         return m_response_header;
-    }
-    
-    public static Date stringToDate(String string_date){
-        String last_modified;
-        Date date = null;
-        last_modified = string_date;
-        try {
-            date = m_Date_Time_Formater.parse(last_modified);
-        } catch (ParseException ex) {
-            Logger.getLogger(Data.class.getName()).log(Level.SEVERE, null, ex);
-        }
-        return date;
-    }
-    
-    public String getHeaderValue(String key){
-        switch(key){
-            case "Date":
-                {
-                    Date date = stringToDate(m_response_header.get("Date"));
-                    
-                    return date.toGMTString();
-                }
-            case "Last-Modified":
-                {
-                    Date date = stringToDate(m_response_header.get("Last-Modified"));
-                    
-                    return date.toGMTString();
-                }
-            default:
-                return m_response_header.get(key);
-        }
     }
     
     @Override
