@@ -15,6 +15,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Set;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.StringJoiner;
+import java.util.TimeZone;
 
 /**
  *
@@ -245,8 +247,19 @@ public class Database {
                     query.put("ETag", result.getString("etag"));
                     query.put("Content-Length", Integer.toString(result.getInt("content_length")));
                     query.put("Content-Type", result.getString("content_type"));
-                    query.put("Date", result.getDate("date").toGMTString());
-                    query.put("Last-Modified", result.getDate("last_modified").toGMTString());
+                    
+                    Date date = result.getDate("date");
+                    SimpleDateFormat sdf = new SimpleDateFormat("EEE, dd MMM yyyy hh:mm:ss zzz");
+                    sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+                    String date_string = (sdf.format(date.getTime()));
+                    query.put("Date", date_string);
+                    
+                    date = result.getDate("last_modified");
+                    date_string = sdf.format(date);
+                    System.out.println("***" + date_string);
+                    query.put("Last-Modified", date_string);
+                    
+                    
                     query.put("Data-Path", result.getString("file_path"));
                     
                 }else {
