@@ -35,7 +35,6 @@ public class WebServer extends Thread{
 	m_port = port;
         m_server_active = true;
     }
-
 	
     /**
      * The main loop of the web server
@@ -49,12 +48,15 @@ public class WebServer extends Thread{
             m_server_socket = new ServerSocket(m_port);
         } catch (IOException ex) {
             Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
-            
-            return
+            return;
         }
         while(m_server_active){
-            Socket client_socket = m_server_socket.accept(); 
-            
+            try { 
+                Socket client_socket = m_server_socket.accept();
+                
+            } catch (IOException ex) {
+                Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 
@@ -88,12 +90,7 @@ public class WebServer extends Thread{
         System.out.println("starting the server on port " + serverPort);
 
         WebServer server = null;
-        try {
-            server = new WebServer(serverPort);
-        } catch (IOException ex) {
-            Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
-            System.exit(1);
-        }
+        server = new WebServer(serverPort);
 
         server.start();
         System.out.println("server started. Type \"quit\" to stop");
