@@ -28,11 +28,12 @@ public class ServerWorker extends Thread{
      */
     ServerWorker(Socket socket) throws IOException{
         m_socket = socket;
-        m_input_request = new BufferedReader(new InputStreamReader(m_socket.getInputStream()));
-        m_output_response = m_socket.getOutputStream();
+        
+        System.out.println("Worker: Created");
     }
     
     private String processRequest(ArrayList<String> request){
+        System.out.println("Worker: Processing...");
         String response = "";
         for(String line: request){
             response += line;
@@ -44,16 +45,29 @@ public class ServerWorker extends Thread{
      */
     @Override
     public void run(){
+        System.out.println("Worker: Started running");
+        
         try {
+            m_input_request = new BufferedReader(new InputStreamReader(m_socket.getInputStream()));
+
             ArrayList<String> request = new ArrayList();
             String input_line;
-            while((input_line = m_input_request.readLine()) != null){
-                request.add(input_line);
-            }
+            System.out.println("Worker: Trying to read");
+            input_line = m_input_request.readLine();
+            request.add(input_line);
+//            System.out.println("Worker");
+//            while((input_line = m_input_request.readLine()) != null){
+//                System.out.println("Worker: input: " + input_line);
+//                request.add(input_line);
+//            }
             String response = processRequest(request);
-            System.out.println(response);
+            System.out.println("Worker: output: " + response);
+            
+            m_output_response = m_socket.getOutputStream();
+            
         } catch (IOException ex) {
             Logger.getLogger(ServerWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
+        System.out.println("Worker: Finished running");
     }
 }

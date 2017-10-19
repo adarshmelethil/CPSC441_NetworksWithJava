@@ -51,9 +51,16 @@ public class WebServer extends Thread{
             return;
         }
         while(m_server_active){
+            System.out.println("Server: waiting for connection");
             try { 
                 Socket client_socket = m_server_socket.accept();
-                
+                System.out.println("Server: Recived connection, created worker");
+//                new ServerWorker(client_socket).start();
+                PrintWriter out = new PrintWriter(client_socket.getOutputStream(), true);
+                BufferedReader in = new BufferedReader( new InputStreamReader(clientSocket.getInputStream()));
+            
+                String line = in .readLine();
+                System.out.println(line);
             } catch (IOException ex) {
                 Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -67,6 +74,7 @@ public class WebServer extends Thread{
      */
     public void shutdown() {
         m_server_active = false;
+        Thread.currentThread().interrupt();
     }
 
 	
@@ -97,7 +105,24 @@ public class WebServer extends Thread{
         System.out.println(".....................................");
 
         Scanner keyboard = new Scanner(System.in);
-        while ( !keyboard.next().equals("quit") );
+        String line;
+        while ( !(line = keyboard.next()).equals("quit") ){
+            System.out.println("Sending: " + line);
+            try {
+                Socket requestSocket = new Socket("localhost", 2225);
+                PrintWriter out = new PrintWriter(requestSocket.getOutputStream());
+                out.write(line);
+                out.flush();
+                BufferedReader in = new BufferedReader(new InputStreamReader(requestSocket.getInputStream()));
+                String server_line;
+                while((server_line = in.readLine())!=null){
+                    System.out.println("Server Response: " + server_line);
+                }
+                
+            } catch (IOException ex) {
+                Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
 
         System.out.println();
         System.out.println("shutting down the server...");
