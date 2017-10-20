@@ -37,8 +37,6 @@ public class ServerWorker extends Thread{
      */
     ServerWorker(Socket socket) throws IOException{
         m_socket = socket;
-        
-        System.out.println("Worker: Created");
     }
     
     private byte[] getFile(File file){
@@ -60,10 +58,14 @@ public class ServerWorker extends Thread{
         return file_bytes;
     }
     
-    private HashMap<String, String> processHeader(ArrayList<String> request){
+    private HashMap<String, String> processHeader(String request){
         HashMap<String, String> header_values = new HashMap();
-        for(String line: request){
+        String[] request_lines = request.split("\r\n");
+        for(String line: request_lines){
             int index_of_split = line.indexOf(":");
+            if(index_of_split < 0){
+                index_of_split = line.indexOf(" ");
+            }
             String key = line.substring(0, index_of_split).trim();
             String value = line.substring(index_of_split+1).trim();
             
@@ -106,13 +108,11 @@ public class ServerWorker extends Thread{
         return sdf.format(currentTime);
     }
     
-    private byte[] processRequest(ArrayList<String> request){
-        System.out.println("Worker: Processing...");
+    private byte[] processRequest(String request){
         String header = "";
         String content_info = "";
         String data = "";
         byte[] file_bytes = new byte[0];
-//        System.out.println(request.size());
         HashMap<String, String> header_values = processHeader(request);
         String get_value = header_values.get("GET");
         if(get_value != null){
@@ -124,6 +124,7 @@ public class ServerWorker extends Thread{
                 file_bytes = getFile(file);
                 if(file_bytes == null){
                     header = "HTTP/1.1 404 Not Found\r\n";
+                    file_bytes = new byte[0];
                 }else{
                     header = "HTTP/1.1 200 OK\r\n";
                     content_info = "Content-Length: " + file_bytes.length + "\r\n"
@@ -154,32 +155,21 @@ public class ServerWorker extends Thread{
      */
     @Override
     public void run(){
-        System.out.println("Worker: Started running");
-
         try {
             BufferedReader input_request = new BufferedReader(new InputStreamReader(m_socket.getInputStream()));
             OutputStream output_response = m_socket.getOutputStream();
             
-            ArrayList<String> request = new ArrayList();
             char[] input_buffer = new char[10000];
             
-            while(true){
-                int read_value = -1;
-                if(input_request.ready()){
-                    read_value = input_request.read(input_buffer);
-                }
-                if(read_value <= 0 ){
-                    break;
-                }
-                String read_line = String.valueOf(input_buffer);
-//                input_line = m_input_request.readLine();
-                System.out.println("Worker: input: " + read_line.length() + "-" + read_line);
-                request.add(read_line);
+            int read_value = -1;
+            if(input_request.ready()){
+                read_value = input_request.read(input_buffer);
             }
-            byte[] response = processRequest(request);
-            
-            System.out.println("Worker: output: " + String.valueOf(response));
-            
+            if(read_value <= 0 ){
+                return;
+            }
+            String read_line = String.valueOf(input_buffer, 0, read_value);
+            byte[] response = processRequest(read_line);
             output_response.write(response);
             output_response.flush();
             input_request.close();
@@ -187,7 +177,5 @@ public class ServerWorker extends Thread{
         } catch (IOException ex) {
             Logger.getLogger(ServerWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
-        System.out.println("Worker: Finished running");
     }
 }
