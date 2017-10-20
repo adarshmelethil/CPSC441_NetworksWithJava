@@ -57,6 +57,7 @@ public class ServerWorker extends Thread{
             System.out.println("Error Reading The File.");
             Logger.getLogger(ServerWorker.class.getName()).log(Level.SEVERE, null, e1);
         }
+        return file_bytes;
     }
     
     private HashMap<String, String> processHeader(ArrayList<String> request){
