@@ -108,6 +108,13 @@ public class ServerWorker extends Thread{
         return sdf.format(currentTime);
     }
     
+    private String getLastModified(File file){
+        Date currentTime = new Date(file.lastModified());
+        SimpleDateFormat sdf = new SimpleDateFormat("EEE, MMM d, yyyy hh:mm:ss zzz");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+        return sdf.format(currentTime);
+    }
+    
     private byte[] processRequest(String request){
         String header = "";
         String content_info = "";
@@ -128,7 +135,8 @@ public class ServerWorker extends Thread{
                 }else{
                     header = "HTTP/1.1 200 OK\r\n";
                     content_info = "Content-Length: " + file_bytes.length + "\r\n"
-                                 + "Content-Type: " + getFileType(file) + "\r\n";
+                                 + "Content-Type: " + getFileType(file) + "\r\n"
+                                 + "Last-Modified: " + getLastModified(file) + "\r\n";
                 }
             }
         }else{
