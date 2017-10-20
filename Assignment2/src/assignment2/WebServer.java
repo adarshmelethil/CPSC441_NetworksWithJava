@@ -103,24 +103,24 @@ public class WebServer extends Thread{
         Scanner keyboard = new Scanner(System.in);
         String line;
         while ( !(line = keyboard.next()).equals("quit") ){
-            System.out.println("Sending: " + line);
-            try {
-                Socket requestSocket = new Socket("localhost", 2225);
-                PrintWriter out = new PrintWriter(requestSocket.getOutputStream());
-                BufferedReader in = new BufferedReader(new InputStreamReader(requestSocket.getInputStream()));
-
-                out.write(line+"\n");
-                out.write("");
-                out.flush();
-                String server_line;
-                while((server_line = in.readLine())!=null){
-                    System.out.println("Server Response: " + server_line);
-                }
-                
-            } catch (IOException ex) {
-                Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            System.out.println("Finished Transaction");
+//            System.out.println("Sending: " + line);
+//            try {
+//                Socket requestSocket = new Socket("localhost", 2225);
+//                PrintWriter out = new PrintWriter(requestSocket.getOutputStream());
+//                BufferedReader in = new BufferedReader(new InputStreamReader(requestSocket.getInputStream()));
+//
+//                out.write(line+"\n");
+//                out.write("");
+//                out.flush();
+//                String server_line;
+//                while((server_line = in.readLine())!=null){
+//                    System.out.println("Server Response: " + server_line);
+//                }
+//                
+//            } catch (IOException ex) {
+//                Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
+//            }
+//            System.out.println("Finished Transaction");
         }
 
         System.out.println();
