@@ -10,6 +10,7 @@ import java.util.*;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.SocketException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /**
@@ -22,7 +23,7 @@ public class WebServer extends Thread{
     // Server Socket
     ServerSocket m_server_socket; 
     // Variable to control the server
-    boolean m_server_active;
+    private volatile boolean m_server_active;
     
     /**
      * Default constructor to initialize the web server
@@ -56,7 +57,9 @@ public class WebServer extends Thread{
                 Socket client_socket = m_server_socket.accept();
                 System.out.println("Server: Recived connection, created worker");
                 new ServerWorker(client_socket).start();
-                
+
+            } catch (SocketException e){
+//                System.out.println(e);
             } catch (IOException ex) {
                 Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -70,7 +73,11 @@ public class WebServer extends Thread{
      */
     public void shutdown() {
         m_server_active = false;
-        Thread.currentThread().interrupt();
+        try {
+            m_server_socket.close();
+        } catch (IOException ex) {
+            Logger.getLogger(WebServer.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
 
 	
