@@ -166,12 +166,14 @@ public class ServerWorker extends Thread{
         try {
             BufferedReader input_request = new BufferedReader(new InputStreamReader(m_socket.getInputStream()));
             OutputStream output_response = m_socket.getOutputStream();
-            
+            System.out.println("here");
             char[] input_buffer = new char[10000];
             
             int read_value = -1;
             if(input_request.ready()){
                 read_value = input_request.read(input_buffer);
+                System.out.println(read_value);
+
             }
             if(read_value <= 0 ){
                 return;
@@ -185,5 +187,6 @@ public class ServerWorker extends Thread{
         } catch (IOException ex) {
             Logger.getLogger(ServerWorker.class.getName()).log(Level.SEVERE, null, ex);
         }
+        System.out.println("Worker over");
     }
 }
